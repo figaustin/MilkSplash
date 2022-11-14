@@ -1,0 +1,20 @@
+name: MilkSplash
+version: '${project.version}'
+main: com.etsuni.milksplash.MilkSplash
+api-version: 1.19
+commands:
+  milk:
+    description: Base command
+permissions:
+  milksplash.*:
+    description: Gives access to all MilkSplash permissions
+    children:
+      milksplash.use: true
+      milksplash.craft: true
+  milksplash.use:
+    description: Players can use Milk Bottles
+  milksplash.craft:
+    description: Players can craft Milk Bottles
+
+depend: [Vault]
+
