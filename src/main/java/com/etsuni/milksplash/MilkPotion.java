@@ -1,6 +1,7 @@
 package com.etsuni.milksplash;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.LivingEntity;
@@ -13,10 +14,7 @@ import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.Recipe;
-import org.bukkit.inventory.ShapedRecipe;
+import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.Plugin;
@@ -24,6 +22,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.projectiles.ProjectileSource;
 import org.checkerframework.checker.units.qual.N;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -37,7 +36,13 @@ public class MilkPotion implements Listener {
     private Integer cooldownTime;
     private Boolean coolDownsEnabled;
     private Boolean permissionsEnabled;
+    private Boolean negativeEffectsOnly;
+    private Boolean onlyThrower;
     private ShapedRecipe recipe;
+
+    private Component name;
+
+    private final LegacyComponentSerializer LEGACY_COMP_SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
 
     public MilkPotion() {
         settings();
@@ -46,13 +51,13 @@ public class MilkPotion implements Listener {
     public ShapedRecipe createRecipe() {
         ItemStack item = new ItemStack(Material.SPLASH_POTION);
         PotionMeta meta = (PotionMeta) item.getItemMeta();
-
-        meta.displayName(Component.text(Objects.requireNonNull(config.getString("item_name"))));
+        meta.displayName(name);
         meta.setColor(Color.WHITE);
 
         List<Component> lore = new ArrayList<>();
-        for(String string : config.getStringList("lore")) {
-            lore.add(Component.text(string));
+        for(String str : config.getStringList("lore")) {
+            Component loreComponent = fromLegacy(str);
+            lore.add(loreComponent);
         }
 
         meta.lore(lore);
@@ -74,6 +79,9 @@ public class MilkPotion implements Listener {
         cooldownTime = config.getInt("cooldown_time");
         coolDownsEnabled = config.getBoolean("cooldowns_enabled");
         permissionsEnabled = config.getBoolean("permissions_enabled");
+        name = fromLegacy(config.getString("item_name"));
+        negativeEffectsOnly = config.getBoolean("negative_effects_only");
+        onlyThrower = config.getBoolean("only_cleanse_throwers_effects");
     }
 
 
@@ -82,41 +90,69 @@ public class MilkPotion implements Listener {
     public void onSplash(PotionSplashEvent event){
         ThrownPotion thrownPotion = event.getPotion();
         ItemStack potion = thrownPotion.getItem();
-        Collection<LivingEntity> entities = event.getAffectedEntities();
 
-
-        if(!potion.getItemMeta().displayName().toString().contains("Milk Bottle")){
-            Bukkit.broadcast(Component.text("Didn't work"));
+        if(potion.getItemMeta().displayName() == null || !potion.getItemMeta().displayName().equals(name)){
             return;
         }
 
+        Collection<LivingEntity> entities = event.getAffectedEntities();
+        Projectile projectile = event.getEntity();
+        LivingEntity player = (LivingEntity) projectile.getShooter();
+
+        if(onlyThrower && entities.contains(player)) {
+            Collection<PotionEffect> potionEffects = player.getActivePotionEffects();
+            if(negativeEffectsOnly) {
+                for(PotionEffect potionEffect : potionEffects) {
+                    PotionEffectType type = potionEffect.getType();
+                    if(negativeEffects().contains(type)) {
+                        player.removePotionEffect(type);
+                    }
+                }
+            }
+            else if(potionEffects.size() > 0) {
+                for(PotionEffect effect : potionEffects) {
+                    PotionEffectType type = effect.getType();
+                    player.removePotionEffect(type);
+                }
+            }
+            return;
+        }
+
+
         for(LivingEntity entity : entities) {
             Collection<PotionEffect> potionEffects = entity.getActivePotionEffects();
-            if(potionEffects.size() > 0) {
+            if(negativeEffectsOnly) {
+                for(PotionEffect potionEffect : potionEffects) {
+                    PotionEffectType type = potionEffect.getType();
+                    if(negativeEffects().contains(type)) {
+                        entity.removePotionEffect(type);
+                    }
+                }
+            }
+            else if(potionEffects.size() > 0) {
                 for(PotionEffect effect : potionEffects) {
                     PotionEffectType type = effect.getType();
                     entity.removePotionEffect(type);
                 }
-                Bukkit.broadcast(Component.text("Potions cleared"));
             }
-
         }
     }
 
+
     @EventHandler
     public void onCraft(CraftItemEvent event) {
+        if(!permissionsEnabled) return;
+
         Player player = (Player) event.getWhoClicked();
 
         if(player.hasPermission("milksplash.craft")) return;
 
         ItemStack item = event.getRecipe().getResult();
 
-        String name = ChatColor.translateAlternateColorCodes('&', config.getString("item_name"));
-
-        if(item.getItemMeta().displayName().toString().contains(name)) {
+        if(item.getItemMeta().displayName().equals(name)) {
             event.setCancelled(true);
-            String msg = ChatColor.translateAlternateColorCodes('&', config.getString("no_permissions_craft_msg"));
-            player.sendMessage(Component.text(msg));
+            Component msg = fromLegacy(config.getString("no_permissions_craft_msg"));
+            player.sendMessage(msg);
             player.closeInventory();
 
         }
@@ -125,30 +161,61 @@ public class MilkPotion implements Listener {
 
     @EventHandler
     public void onThrow(ProjectileLaunchEvent event) {
+
         Projectile projectile = event.getEntity();
         Player player = (Player) projectile.getShooter();
-        UUID uuid = player.getUniqueId();
+        ItemStack itemStack = player.getInventory().getItemInMainHand();
 
-        if(!player.hasPermission("milksplash.use")) {
-            String msg = ChatColor.translateAlternateColorCodes('&', config.getString("no_permissions_throw_msg"));
-            player.sendMessage(Component.text(msg));
-            event.setCancelled(true);
+        if(itemStack.getItemMeta().displayName() == null || !itemStack.getItemMeta().displayName().equals(name)) {
             return;
         }
 
-        //Check if player is on cool down for potion throwing
-        if(playersOnCooldown.containsKey(uuid)) {
-            if(playersOnCooldown.get(uuid) > System.currentTimeMillis()){
-                long timeLeft = (playersOnCooldown.get(uuid) - System.currentTimeMillis() / 1000);
-                player.sendMessage(Component.text("You can't do that for " + timeLeft + " more seconds!"));
+        UUID uuid = player.getUniqueId();
+        if(permissionsEnabled) {
+            if(!player.hasPermission("milksplash.use")) {
+                Component msg = fromLegacy(config.getString("no_permissions_throw_msg"));
+                player.sendMessage(msg);
                 event.setCancelled(true);
                 return;
             }
+        }
 
+        //Check if cooldowns are enabled and if player is on cool down for potion throwing
+        if(coolDownsEnabled) {
+            if(playersOnCooldown.containsKey(uuid)) {
+                if(playersOnCooldown.get(uuid) > System.currentTimeMillis()){
+                    long timeLeft = ((playersOnCooldown.get(uuid) - System.currentTimeMillis()) / 1000);
+                    player.sendMessage(Component.text("You can't do that for " + timeLeft + " more seconds!"));
+                    event.setCancelled(true);
+                    return;
+                }
+
+            }
         }
 
         playersOnCooldown.put(uuid, System.currentTimeMillis() + (cooldownTime * 1000));
 
+    }
 
+    public Component fromLegacy(String legacyText) {
+        return LEGACY_COMP_SERIALIZER.deserialize(legacyText);
+    }
+
+    public List<PotionEffectType> negativeEffects() {
+        List<PotionEffectType> negEffects = new ArrayList<>();
+
+        negEffects.add(PotionEffectType.BLINDNESS);
+        negEffects.add(PotionEffectType.CONFUSION);
+        negEffects.add(PotionEffectType.DARKNESS);
+        negEffects.add(PotionEffectType.HUNGER);
+        negEffects.add(PotionEffectType.POISON);
+        negEffects.add(PotionEffectType.SLOW);
+        negEffects.add(PotionEffectType.WITHER);
+        negEffects.add(PotionEffectType.WEAKNESS);
+        negEffects.add(PotionEffectType.UNLUCK);
+        negEffects.add(PotionEffectType.LEVITATION);
+        negEffects.add(PotionEffectType.SLOW_DIGGING);
+
+        return negEffects;
     }
 }

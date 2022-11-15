@@ -4,9 +4,7 @@ import net.milkbowl.vault.chat.Chat;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 
-import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -28,13 +26,15 @@ public final class MilkSplash extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        config.addDefault("item_name", "Milk Bottle");
+        config.addDefault("item_name", "&fMilk Bottle");
         config.addDefault("lore", bottleLore());
         config.addDefault("cooldowns_enabled", false);
         config.addDefault("cooldown_time", -1);
         config.addDefault("permissions_enabled", false);
-        config.addDefault("no_permissions_throw_msg", "&4 You can not throw milk bottles!");
-        config.addDefault("no_permissions_craft_msg", "You can not craft milk bottles!");
+        config.addDefault("no_permissions_throw_msg", "&fYou can not throw milk bottles!");
+        config.addDefault("no_permissions_craft_msg", "&fYou can not craft milk bottles!");
+        config.addDefault("only_cleanse_throwers_effects", true);
+        config.addDefault("negative_effects_only", false);
         config.options().copyDefaults(true);
         saveConfig();
 
@@ -57,7 +57,7 @@ public final class MilkSplash extends JavaPlugin {
     public List<String> bottleLore() {
         List<String> stringList = new ArrayList<>();
 
-        stringList.add("Cleanses all potion effects");
+        stringList.add("&fCleanses all potion effects");
 
         return stringList;
     }
