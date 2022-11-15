@@ -30,6 +30,7 @@ public final class MilkSplash extends JavaPlugin {
         config.addDefault("lore", bottleLore());
         config.addDefault("cooldowns_enabled", false);
         config.addDefault("cooldown_time", -1);
+        config.addDefault("cooldown_message", "&fYou can not do that for %seconds% more seconds!");
         config.addDefault("permissions_enabled", false);
         config.addDefault("no_permissions_throw_msg", "&fYou can not throw milk bottles!");
         config.addDefault("no_permissions_craft_msg", "&fYou can not craft milk bottles!");

@@ -185,7 +185,9 @@ public class MilkPotion implements Listener {
             if(playersOnCooldown.containsKey(uuid)) {
                 if(playersOnCooldown.get(uuid) > System.currentTimeMillis()){
                     long timeLeft = ((playersOnCooldown.get(uuid) - System.currentTimeMillis()) / 1000);
-                    player.sendMessage(Component.text("You can't do that for " + timeLeft + " more seconds!"));
+                    String cdMsg = Objects.requireNonNull(config.getString("cooldown_message")).replace("%seconds%", Long.toString(timeLeft));
+                    Component msg = fromLegacy(cdMsg);
+                    player.sendMessage(msg);
                     event.setCancelled(true);
                     return;
                 }
