@@ -5,6 +5,7 @@ import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
 
+import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -23,6 +24,7 @@ public final class MilkSplash extends JavaPlugin {
     private static Economy econ = null;
     private static Permission perms = null;
     private static Chat chat = null;
+
 
     @Override
     public void onEnable() {
@@ -43,8 +45,12 @@ public final class MilkSplash extends JavaPlugin {
         MilkPotion milkPotion = new MilkPotion();
         Bukkit.addRecipe(milkPotion.createRecipe());
 
+
+
+        this.getServer().getPluginManager().registerEvents(new MilkBottle(), this);
         this.getServer().getPluginManager().registerEvents(new MilkPotion(), this);
         this.getCommand("milk").setExecutor(new Commands());
+
 
         setupPermissions();
     }
@@ -62,7 +68,6 @@ public final class MilkSplash extends JavaPlugin {
 
         return stringList;
     }
-
 
     private boolean setupPermissions() {
         RegisteredServiceProvider<Permission> rsp = getServer().getServicesManager().getRegistration(Permission.class);
