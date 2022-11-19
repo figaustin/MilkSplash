@@ -11,10 +11,13 @@ permissions:
     children:
       milksplash.use: true
       milksplash.craft: true
+      milksplash.brew: true
   milksplash.use:
     description: Players can use Milk Bottles
   milksplash.craft:
     description: Players can craft Milk Bottles
+  milksplash.brew:
+    description: Players can brew Milk Bottles and Splash Milk Bottles
 
 depend: [Vault]
 

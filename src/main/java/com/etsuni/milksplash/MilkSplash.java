@@ -28,19 +28,24 @@ public final class MilkSplash extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        config.addDefault("item_name", "&fMilk Bottle");
-        config.addDefault("lore", bottleLore());
+        config.addDefault("regular_potion_name", "&fMilk Bottle");
+        config.addDefault("splash_potion_name", "&fMilk Splash");
+        config.addDefault("regular_potion_lore", bottleLore());
+        config.addDefault("splash_potion_lore", splashLore());
         config.addDefault("cooldowns_enabled", false);
         config.addDefault("cooldown_time", -1);
         config.addDefault("cooldown_message", "&fYou can not do that for %seconds% more seconds!");
         config.addDefault("permissions_enabled", false);
-        config.addDefault("no_permissions_throw_msg", "&fYou can not throw milk bottles!");
-        config.addDefault("no_permissions_craft_msg", "&fYou can not craft milk bottles!");
+        config.addDefault("crafting_enabled", false);
+        config.addDefault("brewing_enabled", true);
+        config.addDefault("no_permission_brew_msg", "&fYou can not brew milk bottles!");
+        config.addDefault("no_permission_throw_msg", "&fYou can not throw milk bottles!");
+        config.addDefault("no_permission_craft_msg", "&fYou can not craft milk bottles!");
         config.addDefault("only_cleanse_throwers_effects", true);
         config.addDefault("negative_effects_only", false);
         config.options().copyDefaults(true);
         saveConfig();
-
+        MilkBottle.createMilkBottles();
 
         MilkPotion milkPotion = new MilkPotion();
         Bukkit.addRecipe(milkPotion.createRecipe());
@@ -65,6 +70,13 @@ public final class MilkSplash extends JavaPlugin {
         List<String> stringList = new ArrayList<>();
 
         stringList.add("&fCleanses all potion effects");
+
+        return stringList;
+    }
+
+    public List<String> splashLore() {
+        List<String> stringList = new ArrayList<>();
+        stringList.add("&fCleanses all potion effects in an area");
 
         return stringList;
     }

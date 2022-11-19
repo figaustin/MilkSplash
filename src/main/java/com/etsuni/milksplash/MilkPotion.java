@@ -14,6 +14,7 @@ import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
@@ -79,19 +80,41 @@ public class MilkPotion implements Listener {
         cooldownTime = config.getInt("cooldown_time");
         coolDownsEnabled = config.getBoolean("cooldowns_enabled");
         permissionsEnabled = config.getBoolean("permissions_enabled");
-        name = fromLegacy(config.getString("item_name"));
+        name = fromLegacy(config.getString("splash_potion_name"));
         negativeEffectsOnly = config.getBoolean("negative_effects_only");
         onlyThrower = config.getBoolean("only_cleanse_throwers_effects");
     }
 
 
-    //TODO MAKE IT SO IT WILL ONLY REMOVE NEGATIVE EFFECTS ?
+    @EventHandler
+    public void onDrink(PlayerItemConsumeEvent event) {
+        Player player = event.getPlayer();
+        ItemStack item = event.getItem();
+
+        if(!item.isSimilar(MilkBottle.milkBottle)) {
+            return;
+        }
+
+        Collection<PotionEffect> potionEffects = player.getActivePotionEffects();
+        for(PotionEffect potionEffect : potionEffects) {
+            PotionEffectType potionType = potionEffect.getType();
+            if(negativeEffectsOnly) {
+                if(negativeEffects().contains(potionType)) {
+                    player.removePotionEffect(potionType);
+                }
+            }
+            else {
+                player.removePotionEffect(potionType);
+            }
+        }
+    }
+
     @EventHandler
     public void onSplash(PotionSplashEvent event){
         ThrownPotion thrownPotion = event.getPotion();
         ItemStack potion = thrownPotion.getItem();
 
-        if(potion.getItemMeta().displayName() == null || !potion.getItemMeta().displayName().equals(name)){
+        if(!Objects.equals(potion.getItemMeta().displayName(), fromLegacy(config.getString("splash_potion_name")))){
             return;
         }
 
@@ -151,12 +174,11 @@ public class MilkPotion implements Listener {
 
         if(item.getItemMeta().displayName().equals(name)) {
             event.setCancelled(true);
-            Component msg = fromLegacy(config.getString("no_permissions_craft_msg"));
+            Component msg = fromLegacy(config.getString("no_permission_craft_msg"));
             player.sendMessage(msg);
             player.closeInventory();
 
         }
-
     }
 
     @EventHandler
@@ -166,14 +188,14 @@ public class MilkPotion implements Listener {
         Player player = (Player) projectile.getShooter();
         ItemStack itemStack = player.getInventory().getItemInMainHand();
 
-        if(itemStack.getItemMeta().displayName() == null || !itemStack.getItemMeta().displayName().equals(name)) {
+        if(!itemStack.isSimilar(MilkBottle.milkBottle)) {
             return;
         }
 
         UUID uuid = player.getUniqueId();
         if(permissionsEnabled) {
             if(!player.hasPermission("milksplash.use")) {
-                Component msg = fromLegacy(config.getString("no_permissions_throw_msg"));
+                Component msg = fromLegacy(config.getString("no_permission_throw_msg"));
                 player.sendMessage(msg);
                 event.setCancelled(true);
                 return;
@@ -206,7 +228,7 @@ public class MilkPotion implements Listener {
     public List<PotionEffectType> negativeEffects() {
         List<PotionEffectType> negEffects = new ArrayList<>();
 
-        negEffects.add(PotionEffectType.BLINDNESS);
+        negEffects.add(PotionEffectType.SLOW_DIGGING);
         negEffects.add(PotionEffectType.CONFUSION);
         negEffects.add(PotionEffectType.DARKNESS);
         negEffects.add(PotionEffectType.HUNGER);
@@ -216,7 +238,6 @@ public class MilkPotion implements Listener {
         negEffects.add(PotionEffectType.WEAKNESS);
         negEffects.add(PotionEffectType.UNLUCK);
         negEffects.add(PotionEffectType.LEVITATION);
-        negEffects.add(PotionEffectType.SLOW_DIGGING);
 
         return negEffects;
     }
