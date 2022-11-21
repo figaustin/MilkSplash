@@ -50,6 +50,7 @@ public class MilkPotion implements Listener {
     }
 
     public ShapedRecipe createRecipe() {
+
         ItemStack item = new ItemStack(Material.SPLASH_POTION);
         PotionMeta meta = (PotionMeta) item.getItemMeta();
         meta.displayName(name);

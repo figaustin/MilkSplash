@@ -253,6 +253,11 @@ public class MilkBottle implements Listener {
         if(potion == null) {
             return false;
         }
+
+        if(!potion.getType().equals(Material.POTION)) {
+            return false;
+        }
+
         PotionMeta meta = (PotionMeta) potion.getItemMeta();
         PotionType type = meta.getBasePotionData().getType();
 

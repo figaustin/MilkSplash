@@ -48,7 +48,9 @@ public final class MilkSplash extends JavaPlugin {
         MilkBottle.createMilkBottles();
 
         MilkPotion milkPotion = new MilkPotion();
-        Bukkit.addRecipe(milkPotion.createRecipe());
+        if(config.getBoolean("crafting_enabled")) {
+            Bukkit.addRecipe(milkPotion.createRecipe());
+        }
 
 
 
