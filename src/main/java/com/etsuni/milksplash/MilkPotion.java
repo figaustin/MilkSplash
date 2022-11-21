@@ -231,7 +231,10 @@ public class MilkPotion implements Listener {
 
         negEffects.add(PotionEffectType.SLOW_DIGGING);
         negEffects.add(PotionEffectType.CONFUSION);
-        negEffects.add(PotionEffectType.DARKNESS);
+
+        if(MilkSplash.VERSION.equals("1.19.2")) {
+            negEffects.add(PotionEffectType.DARKNESS);
+        }
         negEffects.add(PotionEffectType.HUNGER);
         negEffects.add(PotionEffectType.POISON);
         negEffects.add(PotionEffectType.SLOW);

@@ -25,9 +25,13 @@ public final class MilkSplash extends JavaPlugin {
     private static Permission perms = null;
     private static Chat chat = null;
 
+    public static String VERSION;
+
 
     @Override
     public void onEnable() {
+        VERSION = this.getServer().getVersion();
+
         config.addDefault("regular_potion_name", "&fMilk Bottle");
         config.addDefault("splash_potion_name", "&fMilk Splash");
         config.addDefault("regular_potion_lore", bottleLore());

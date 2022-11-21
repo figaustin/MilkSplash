@@ -1,7 +1,7 @@
 name: MilkSplash
 version: '${project.version}'
 main: com.etsuni.milksplash.MilkSplash
-api-version: 1.19
+api-version: 1.13
 commands:
   milk:
     description: Base command
