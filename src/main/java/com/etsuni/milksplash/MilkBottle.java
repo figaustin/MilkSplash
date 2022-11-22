@@ -1,65 +1,59 @@
 package com.etsuni.milksplash;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.*;
 import org.bukkit.block.BrewingStand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.BrewEvent;
-import org.bukkit.event.inventory.ClickType;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.BrewerInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionType;
-import org.bukkit.scheduler.BukkitScheduler;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+
 
 public class MilkBottle implements Listener {
     private static Plugin plugin = MilkSplash.getPlugin(MilkSplash.class);
 
     private static FileConfiguration config = plugin.getConfig();
 
-    private final static LegacyComponentSerializer LEGACY_COMP_SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
-
     public static ItemStack milkBottle;
     public static ItemStack splashMilk;
+
 
     public static void createMilkBottles() {
         milkBottle = new ItemStack(Material.POTION);
         PotionMeta meta = (PotionMeta) milkBottle.getItemMeta();
-        Component name = fromLegacy(config.getString("regular_potion_name"));
-        List<Component> lore1 = new ArrayList<>();
+        String name = translate(config.getString("regular_potion_name"));
+
+        List<String> lore1 = new ArrayList<>();
         for(String str : config.getStringList("regular_potion_lore")) {
-            Component loreComponent = fromLegacy(str);
-            lore1.add(loreComponent);
+            String loreStr = translate(str);
+            lore1.add(loreStr);
         }
         meta.setColor(Color.WHITE);
-        meta.lore(lore1);
-        meta.displayName(name);
+        meta.setLore(lore1);
+
+        meta.setDisplayName(name);
         milkBottle.setItemMeta(meta);
 
-        List<Component> lore2 = new ArrayList<>();
+        List<String> lore2 = new ArrayList<>();
         for(String str : config.getStringList("splash_potion_lore")) {
-            Component loreComponent = fromLegacy(str);
-            lore2.add(loreComponent);
+            String loreStr = translate(str);
+            lore2.add(loreStr);
         }
         splashMilk = new ItemStack(Material.SPLASH_POTION);
         PotionMeta splashMeta = (PotionMeta) splashMilk.getItemMeta();
-        Component splashName = fromLegacy(config.getString("splash_potion_name"));
+
         splashMeta.setColor(Color.WHITE);
-        splashMeta.displayName(splashName);
-        splashMeta.lore(lore2);
+        splashMeta.setDisplayName(translate(config.getString("splash_potion_name")));
+        splashMeta.setLore(lore2);
         splashMilk.setItemMeta(splashMeta);
     }
 
@@ -72,12 +66,20 @@ public class MilkBottle implements Listener {
             return;
         }
 
+        int clickedSlot = event.getSlot();
 
+        BrewingStand stand;
+
+        if(inv.getType().equals(InventoryType.BREWING) && clickedSlot == 4 ) {
+            stand = ((BrewerInventory) inv).getHolder();
+            if(BrewingList.getList().contains(stand)) {
+                event.setCancelled(true);
+            }
+        }
 
         if (!clickType.isLeftClick()) {
             return;
         }
-        int clickedSlot = event.getSlot();
         if (clickedSlot != 3) {
             return;
         }
@@ -95,7 +97,7 @@ public class MilkBottle implements Listener {
         }
 
         if(config.getBoolean("permissions_enabled") && !player.hasPermission("milksplash.brew")) {
-            player.sendMessage(fromLegacy(config.getString("no_permission_brew_msg")));
+            player.sendMessage(translate(config.getString("no_permission_brew_msg")));
             return;
         }
 
@@ -154,79 +156,6 @@ public class MilkBottle implements Listener {
         BrewClock clock = new BrewClock(inventory, 400);
     }
 
-    public class BrewClock {
-
-        private BrewerInventory inventory;
-        private int current;
-        private BrewingStand brewingStand;
-        private Integer sc;
-        private ItemStack[] before;
-        private Boolean splash;
-
-        public BrewClock(BrewerInventory inventory, int time) {
-            this.inventory = inventory;
-            this.current = time;
-            this.brewingStand = inventory.getHolder();
-            this.before = inventory.getContents();
-            this.splash = false;
-            start();
-        }
-
-        public void start() {
-            BukkitScheduler scheduler = Bukkit.getServer().getScheduler();
-            brewingStand.setFuelLevel(brewingStand.getFuelLevel() - 1);
-
-            this.sc = scheduler.scheduleSyncRepeatingTask(plugin, new Runnable() {
-                @Override
-                public void run() {
-                    if (brewingStand.getFuelLevel() < 1) {
-                        scheduler.cancelTask(sc);
-                        return;
-                    }
-                    if (current == 0) {
-                        ItemStack[] items = inventory.getContents();
-                        inventory.setIngredient(new ItemStack(Material.AIR));
-                        if(splash) {
-                            giveMilkPotion(items, true);
-                        }
-                        else{
-                            ItemStack bucket = new ItemStack(Material.BUCKET, 1);
-                            inventory.setIngredient(bucket);
-                            giveMilkPotion(items, false);
-                            scheduler.cancelTask(sc);
-                            return;
-                        }
-                    }
-                    if(!searchChanged(before, inventory.getContents())) {
-                        scheduler.cancelTask(sc);
-                        return;
-                    }
-                    current--;
-                    brewingStand.setBrewingTime(current);
-                    brewingStand.update(true);
-                }
-            }, 0, 0);
-        }
-
-        public boolean searchChanged(ItemStack[] before, ItemStack[] after) {
-            for(int i = 0; i < before.length; i++) {
-                if(before[i] == null) {
-                    continue;
-                }
-
-                if((before[i] != null && after[i] == null) || (before[i] == null && after[i] != null)) {
-                    return false;
-                }
-                 else{
-                     if(!(before[i].getType() == after[i].getType())){
-                         return false;
-                     }
-                }
-            }
-            return true;
-        }
-    }
-
     public void giveMilkPotion(ItemStack[] items, Boolean splash) {
         for (int i = 0; i < items.length - 2; i++) {
             if(items[i] == null) {
@@ -245,9 +174,6 @@ public class MilkBottle implements Listener {
         }
     }
 
-    public static Component fromLegacy(String legacyText) {
-        return LEGACY_COMP_SERIALIZER.deserialize(legacyText);
-    }
 
     public Boolean isAwkwardPotion(ItemStack potion) {
         if(potion == null) {
@@ -270,6 +196,10 @@ public class MilkBottle implements Listener {
         }
 
         return item.isSimilar(milkBottle);
+    }
+
+    public static String translate(String text) {
+        return ChatColor.translateAlternateColorCodes('&', text);
     }
 
 }

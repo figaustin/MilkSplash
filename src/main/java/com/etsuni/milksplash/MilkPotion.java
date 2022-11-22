@@ -1,7 +1,5 @@
 package com.etsuni.milksplash;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.LivingEntity;
@@ -13,17 +11,14 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.*;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.projectiles.ProjectileSource;
-import org.checkerframework.checker.units.qual.N;
-import org.jetbrains.annotations.NotNull;
+
 
 import java.util.*;
 
@@ -41,9 +36,7 @@ public class MilkPotion implements Listener {
     private Boolean onlyThrower;
     private ShapedRecipe recipe;
 
-    private Component name;
 
-    private final LegacyComponentSerializer LEGACY_COMP_SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
 
     public MilkPotion() {
         settings();
@@ -53,16 +46,15 @@ public class MilkPotion implements Listener {
 
         ItemStack item = new ItemStack(Material.SPLASH_POTION);
         PotionMeta meta = (PotionMeta) item.getItemMeta();
-        meta.displayName(name);
+        meta.setDisplayName(translate(config.getString("splash_potion_name")));
         meta.setColor(Color.WHITE);
-
-        List<Component> lore = new ArrayList<>();
+        List<String> lore = new ArrayList<>();
         for(String str : config.getStringList("lore")) {
-            Component loreComponent = fromLegacy(str);
-            lore.add(loreComponent);
+            String loreStr = translate(str);
+            lore.add(loreStr);
         }
 
-        meta.lore(lore);
+        meta.setLore(lore);
         item.setItemMeta(meta);
 
         NamespacedKey key = new NamespacedKey(plugin, "milk_bottle");
@@ -81,7 +73,6 @@ public class MilkPotion implements Listener {
         cooldownTime = config.getInt("cooldown_time");
         coolDownsEnabled = config.getBoolean("cooldowns_enabled");
         permissionsEnabled = config.getBoolean("permissions_enabled");
-        name = fromLegacy(config.getString("splash_potion_name"));
         negativeEffectsOnly = config.getBoolean("negative_effects_only");
         onlyThrower = config.getBoolean("only_cleanse_throwers_effects");
     }
@@ -112,10 +103,14 @@ public class MilkPotion implements Listener {
 
     @EventHandler
     public void onSplash(PotionSplashEvent event){
+        if(!(event.getEntity().getShooter() instanceof LivingEntity)){
+            return;
+        }
+
         ThrownPotion thrownPotion = event.getPotion();
         ItemStack potion = thrownPotion.getItem();
 
-        if(!Objects.equals(potion.getItemMeta().displayName(), fromLegacy(config.getString("splash_potion_name")))){
+        if(!potion.getItemMeta().getDisplayName().equals(translate(config.getString("splash_potion_name")))) {
             return;
         }
 
@@ -173,20 +168,23 @@ public class MilkPotion implements Listener {
 
         ItemStack item = event.getRecipe().getResult();
 
-        if(item.getItemMeta().displayName().equals(name)) {
+        if(item.getItemMeta().getDisplayName().equals(translate(config.getString("splash_potion_name")))) {
             event.setCancelled(true);
-            Component msg = fromLegacy(config.getString("no_permission_craft_msg"));
-            player.sendMessage(msg);
+            player.sendMessage(translate(config.getString("no_permission_craft_msg")));
             player.closeInventory();
-
         }
     }
 
     @EventHandler
     public void onThrow(ProjectileLaunchEvent event) {
+        if(!(event.getEntity().getShooter() instanceof LivingEntity)){
+            return;
+        }
+        if(!(event.getEntity().getShooter() instanceof Player)) {
+            return;
+        }
 
-        Projectile projectile = event.getEntity();
-        Player player = (Player) projectile.getShooter();
+        Player player = (Player) event.getEntity().getShooter();
         ItemStack itemStack = player.getInventory().getItemInMainHand();
 
         if(!itemStack.isSimilar(MilkBottle.milkBottle)) {
@@ -196,21 +194,18 @@ public class MilkPotion implements Listener {
         UUID uuid = player.getUniqueId();
         if(permissionsEnabled) {
             if(!player.hasPermission("milksplash.use")) {
-                Component msg = fromLegacy(config.getString("no_permission_throw_msg"));
-                player.sendMessage(msg);
+                player.sendMessage(translate(config.getString("no_permission_throw_msg")));
                 event.setCancelled(true);
                 return;
             }
         }
 
-        //Check if cooldowns are enabled and if player is on cool down for potion throwing
         if(coolDownsEnabled) {
             if(playersOnCooldown.containsKey(uuid)) {
                 if(playersOnCooldown.get(uuid) > System.currentTimeMillis()){
                     long timeLeft = ((playersOnCooldown.get(uuid) - System.currentTimeMillis()) / 1000);
                     String cdMsg = Objects.requireNonNull(config.getString("cooldown_message")).replace("%seconds%", Long.toString(timeLeft));
-                    Component msg = fromLegacy(cdMsg);
-                    player.sendMessage(msg);
+                    player.sendMessage(translate(cdMsg));
                     event.setCancelled(true);
                     return;
                 }
@@ -222,8 +217,8 @@ public class MilkPotion implements Listener {
 
     }
 
-    public Component fromLegacy(String legacyText) {
-        return LEGACY_COMP_SERIALIZER.deserialize(legacyText);
+    public String translate(String text) {
+        return ChatColor.translateAlternateColorCodes('&', text);
     }
 
     public List<PotionEffectType> negativeEffects() {

@@ -56,12 +56,8 @@ public final class MilkSplash extends JavaPlugin {
             Bukkit.addRecipe(milkPotion.createRecipe());
         }
 
-
-
         this.getServer().getPluginManager().registerEvents(new MilkBottle(), this);
         this.getServer().getPluginManager().registerEvents(new MilkPotion(), this);
-        this.getCommand("milk").setExecutor(new Commands());
-
 
         setupPermissions();
     }
