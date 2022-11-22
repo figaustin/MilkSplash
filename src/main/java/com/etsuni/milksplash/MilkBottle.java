@@ -19,7 +19,7 @@ import java.util.List;
 
 
 public class MilkBottle implements Listener {
-    private static Plugin plugin = MilkSplash.getPlugin(MilkSplash.class);
+    private static Plugin plugin = MilkSplash.plugin;
 
     private static FileConfiguration config = plugin.getConfig();
 

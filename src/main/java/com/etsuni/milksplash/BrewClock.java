@@ -18,7 +18,7 @@ public class BrewClock{
     private ItemStack[] before;
     private Boolean splash;
 
-    private Plugin plugin = MilkSplash.getPlugin(MilkSplash.class);
+    private Plugin plugin = MilkSplash.plugin;
 
     private FileConfiguration config = plugin.getConfig();
 

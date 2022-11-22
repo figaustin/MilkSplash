@@ -24,7 +24,7 @@ import java.util.*;
 
 public class MilkPotion implements Listener {
 
-    private Plugin plugin = MilkSplash.getPlugin(MilkSplash.class);
+    private Plugin plugin = MilkSplash.plugin;
 
     private FileConfiguration config = plugin.getConfig();
 
