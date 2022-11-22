@@ -17,7 +17,6 @@ import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.projectiles.ProjectileSource;
 
 
 import java.util.*;
@@ -193,7 +192,11 @@ public class MilkPotion implements Listener {
         return ChatColor.translateAlternateColorCodes('&', text);
     }
 
-    public List<PotionEffectType> negativeEffects() {
+    // Lazy list
+    private static List<PotionEffectType> _readOnlyNegativeEffects = null; // Not supposed to be used directly
+    public List<PotionEffectType> negativeEffects(boolean recreateList) {
+        if (_readOnlyNegativeEffects != null && !recreateList)
+            return _readOnlyNegativeEffects;
         List<PotionEffectType> negEffects = new ArrayList<>();
 
         negEffects.add(PotionEffectType.SLOW_DIGGING);
@@ -210,7 +213,12 @@ public class MilkPotion implements Listener {
         negEffects.add(PotionEffectType.UNLUCK);
         negEffects.add(PotionEffectType.LEVITATION);
 
+        _readOnlyNegativeEffects = Collections.unmodifiableList(negEffects);
         return negEffects;
+    }
+
+    public List<PotionEffectType> negativeEffects() {
+        return negativeEffects(false);
     }
 
     private boolean isNegativePotionEffect(PotionEffectType effect) {
