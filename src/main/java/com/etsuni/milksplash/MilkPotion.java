@@ -87,17 +87,10 @@ public class MilkPotion implements Listener {
             return;
         }
 
-        Collection<PotionEffect> potionEffects = player.getActivePotionEffects();
-        for(PotionEffect potionEffect : potionEffects) {
-            PotionEffectType potionType = potionEffect.getType();
-            if(negativeEffectsOnly) {
-                if(negativeEffects().contains(potionType)) {
-                    player.removePotionEffect(potionType);
-                }
-            }
-            else {
-                player.removePotionEffect(potionType);
-            }
+        if (negativeEffectsOnly) {
+            removeNegativePotionEffects(player);
+        } else {
+            removeAllPotionEffects(player);
         }
     }
 
@@ -114,46 +107,25 @@ public class MilkPotion implements Listener {
             return;
         }
 
-        Collection<LivingEntity> entities = event.getAffectedEntities();
+        Collection<LivingEntity> affectedEntities = event.getAffectedEntities();
         Projectile projectile = event.getEntity();
         LivingEntity player = (LivingEntity) projectile.getShooter();
 
-        if(onlyThrower && entities.contains(player)) {
-            Collection<PotionEffect> potionEffects = player.getActivePotionEffects();
+        if(onlyThrower && affectedEntities.contains(player)) {
             if(negativeEffectsOnly) {
-                for(PotionEffect potionEffect : potionEffects) {
-                    PotionEffectType type = potionEffect.getType();
-                    if(negativeEffects().contains(type)) {
-                        player.removePotionEffect(type);
-                    }
-                }
+                removeNegativePotionEffects(player);
             }
-            else if(potionEffects.size() > 0) {
-                for(PotionEffect effect : potionEffects) {
-                    PotionEffectType type = effect.getType();
-                    player.removePotionEffect(type);
-                }
+            else {
+                removeAllPotionEffects(player);
             }
+
             return;
         }
 
-
-        for(LivingEntity entity : entities) {
-            Collection<PotionEffect> potionEffects = entity.getActivePotionEffects();
-            if(negativeEffectsOnly) {
-                for(PotionEffect potionEffect : potionEffects) {
-                    PotionEffectType type = potionEffect.getType();
-                    if(negativeEffects().contains(type)) {
-                        entity.removePotionEffect(type);
-                    }
-                }
-            }
-            else if(potionEffects.size() > 0) {
-                for(PotionEffect effect : potionEffects) {
-                    PotionEffectType type = effect.getType();
-                    entity.removePotionEffect(type);
-                }
-            }
+        if (negativeEffectsOnly) {
+            affectedEntities.forEach(this::removeNegativePotionEffects);
+        } else {
+            affectedEntities.forEach(this::removeAllPotionEffects);
         }
     }
 
@@ -239,5 +211,27 @@ public class MilkPotion implements Listener {
         negEffects.add(PotionEffectType.LEVITATION);
 
         return negEffects;
+    }
+
+    private boolean isNegativePotionEffect(PotionEffectType effect) {
+        return negativeEffects().contains(effect);
+    }
+
+    // Overloaded above just because
+    private boolean isNegativePotionEffect(PotionEffect effect) {
+        return isNegativePotionEffect(effect.getType());
+    }
+
+    private void removeNegativePotionEffects(LivingEntity entity) {
+        entity.getActivePotionEffects().stream()
+                .map(PotionEffect::getType)
+                .filter(this::isNegativePotionEffect)
+                .forEach(entity::removePotionEffect);
+    }
+
+    private void removeAllPotionEffects(LivingEntity entity) {
+        entity.getActivePotionEffects().stream()
+                .map(PotionEffect::getType)
+                .forEach(entity::removePotionEffect);
     }
 }
