@@ -86,11 +86,7 @@ public class MilkPotion implements Listener {
             return;
         }
 
-        if (negativeEffectsOnly) {
-            removeNegativePotionEffects(player);
-        } else {
-            removeAllPotionEffects(player);
-        }
+        removeConfiguredPotionEffects(player);
     }
 
     @EventHandler
@@ -111,21 +107,11 @@ public class MilkPotion implements Listener {
         LivingEntity player = (LivingEntity) projectile.getShooter();
 
         if(onlyThrower && affectedEntities.contains(player)) {
-            if(negativeEffectsOnly) {
-                removeNegativePotionEffects(player);
-            }
-            else {
-                removeAllPotionEffects(player);
-            }
-
+            removeConfiguredPotionEffects(player);
             return;
         }
 
-        if (negativeEffectsOnly) {
-            affectedEntities.forEach(this::removeNegativePotionEffects);
-        } else {
-            affectedEntities.forEach(this::removeAllPotionEffects);
-        }
+        removeConfiguredPotionEffects(affectedEntities);
     }
 
 
@@ -241,5 +227,17 @@ public class MilkPotion implements Listener {
         entity.getActivePotionEffects().stream()
                 .map(PotionEffect::getType)
                 .forEach(entity::removePotionEffect);
+    }
+    
+    private void removeConfiguredPotionEffects(LivingEntity entity) {
+        if (negativeEffectsOnly) {
+            removeNegativePotionEffects(entity);
+        } else {
+            removeAllPotionEffects(entity);
+        }
+    }
+
+    private void removeConfiguredPotionEffects(Collection<LivingEntity> entities) {
+        entities.forEach(this::removeConfiguredPotionEffects);
     }
 }
