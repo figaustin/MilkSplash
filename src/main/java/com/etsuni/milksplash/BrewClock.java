@@ -22,9 +22,6 @@ public class BrewClock{
 
     private FileConfiguration config = plugin.getConfig();
 
-    public BrewClock() {
-
-    }
     public BrewClock(BrewerInventory inventory, int time) {
         this.inventory = inventory;
         this.current = time;
@@ -38,12 +35,12 @@ public class BrewClock{
     public void start() {
         BukkitScheduler scheduler = Bukkit.getServer().getScheduler();
         brewingStand.setFuelLevel(brewingStand.getFuelLevel() - 1);
-        BrewingList.add(brewingStand);
+        BrewingList.getInstance().getList().add(brewingStand);
         this.sc = scheduler.scheduleSyncRepeatingTask(plugin, new Runnable() {
             @Override
             public void run() {
                 if (brewingStand.getFuelLevel() < 1) {
-                    BrewingList.remove(brewingStand);
+                    BrewingList.getInstance().getList().remove(brewingStand);
                     scheduler.cancelTask(sc);
                     return;
                 }
@@ -57,13 +54,13 @@ public class BrewClock{
                         ItemStack bucket = new ItemStack(Material.BUCKET, 1);
                         inventory.setIngredient(bucket);
                         milkBottle.giveMilkPotion(items, false);
-                        BrewingList.remove(brewingStand);
+                        BrewingList.getInstance().getList().remove(brewingStand);
                         scheduler.cancelTask(sc);
                         return;
                     }
                 }
                 if (!searchChanged(before, inventory.getContents())) {
-                    BrewingList.remove(brewingStand);
+                    BrewingList.getInstance().getList().remove(brewingStand);
                     scheduler.cancelTask(sc);
                     return;
                 }

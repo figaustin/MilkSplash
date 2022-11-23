@@ -6,7 +6,7 @@
 
     <groupId>com.etsuni</groupId>
     <artifactId>MilkSplash</artifactId>
-    <version>1.1.3</version>
+    <version>1.2</version>
     <packaging>jar</packaging>
 
     <name>MilkSplash</name>

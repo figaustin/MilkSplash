@@ -72,7 +72,7 @@ public class MilkBottle implements Listener {
 
         if(inv.getType().equals(InventoryType.BREWING) && clickedSlot == 4 ) {
             stand = ((BrewerInventory) inv).getHolder();
-            if(BrewingList.getList().contains(stand)) {
+            if(BrewingList.getInstance().getList().contains(stand)) {
                 event.setCancelled(true);
             }
         }
