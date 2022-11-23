@@ -27,9 +27,11 @@ public final class MilkSplash extends JavaPlugin {
 
     public static String VERSION;
 
+    protected static MilkSplash plugin;
 
     @Override
     public void onEnable() {
+        plugin = this;
         VERSION = this.getServer().getVersion();
 
         config.addDefault("regular_potion_name", "&fMilk Bottle");

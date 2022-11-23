@@ -17,14 +17,13 @@ import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.projectiles.ProjectileSource;
 
 
 import java.util.*;
 
 public class MilkPotion implements Listener {
 
-    private Plugin plugin = MilkSplash.getPlugin(MilkSplash.class);
+    private Plugin plugin = MilkSplash.plugin;
 
     private FileConfiguration config = plugin.getConfig();
 
@@ -87,18 +86,7 @@ public class MilkPotion implements Listener {
             return;
         }
 
-        Collection<PotionEffect> potionEffects = player.getActivePotionEffects();
-        for(PotionEffect potionEffect : potionEffects) {
-            PotionEffectType potionType = potionEffect.getType();
-            if(negativeEffectsOnly) {
-                if(negativeEffects().contains(potionType)) {
-                    player.removePotionEffect(potionType);
-                }
-            }
-            else {
-                player.removePotionEffect(potionType);
-            }
-        }
+        removeConfiguredPotionEffects(player);
     }
 
     @EventHandler
@@ -114,47 +102,16 @@ public class MilkPotion implements Listener {
             return;
         }
 
-        Collection<LivingEntity> entities = event.getAffectedEntities();
+        Collection<LivingEntity> affectedEntities = event.getAffectedEntities();
         Projectile projectile = event.getEntity();
         LivingEntity player = (LivingEntity) projectile.getShooter();
 
-        if(onlyThrower && entities.contains(player)) {
-            Collection<PotionEffect> potionEffects = player.getActivePotionEffects();
-            if(negativeEffectsOnly) {
-                for(PotionEffect potionEffect : potionEffects) {
-                    PotionEffectType type = potionEffect.getType();
-                    if(negativeEffects().contains(type)) {
-                        player.removePotionEffect(type);
-                    }
-                }
-            }
-            else if(potionEffects.size() > 0) {
-                for(PotionEffect effect : potionEffects) {
-                    PotionEffectType type = effect.getType();
-                    player.removePotionEffect(type);
-                }
-            }
+        if(onlyThrower && affectedEntities.contains(player)) {
+            removeConfiguredPotionEffects(player);
             return;
         }
 
-
-        for(LivingEntity entity : entities) {
-            Collection<PotionEffect> potionEffects = entity.getActivePotionEffects();
-            if(negativeEffectsOnly) {
-                for(PotionEffect potionEffect : potionEffects) {
-                    PotionEffectType type = potionEffect.getType();
-                    if(negativeEffects().contains(type)) {
-                        entity.removePotionEffect(type);
-                    }
-                }
-            }
-            else if(potionEffects.size() > 0) {
-                for(PotionEffect effect : potionEffects) {
-                    PotionEffectType type = effect.getType();
-                    entity.removePotionEffect(type);
-                }
-            }
-        }
+        removeConfiguredPotionEffects(affectedEntities);
     }
 
 
@@ -221,7 +178,11 @@ public class MilkPotion implements Listener {
         return ChatColor.translateAlternateColorCodes('&', text);
     }
 
-    public List<PotionEffectType> negativeEffects() {
+    // Lazy list
+    private static List<PotionEffectType> _readOnlyNegativeEffects = null; // Not supposed to be used directly
+    public List<PotionEffectType> negativeEffects(boolean recreateList) {
+        if (_readOnlyNegativeEffects != null && !recreateList)
+            return _readOnlyNegativeEffects;
         List<PotionEffectType> negEffects = new ArrayList<>();
 
         negEffects.add(PotionEffectType.SLOW_DIGGING);
@@ -238,6 +199,45 @@ public class MilkPotion implements Listener {
         negEffects.add(PotionEffectType.UNLUCK);
         negEffects.add(PotionEffectType.LEVITATION);
 
+        _readOnlyNegativeEffects = Collections.unmodifiableList(negEffects);
         return negEffects;
+    }
+
+    public List<PotionEffectType> negativeEffects() {
+        return negativeEffects(false);
+    }
+
+    private boolean isNegativePotionEffect(PotionEffectType effect) {
+        return negativeEffects().contains(effect);
+    }
+
+    // Overloaded above just because
+    private boolean isNegativePotionEffect(PotionEffect effect) {
+        return isNegativePotionEffect(effect.getType());
+    }
+
+    private void removeNegativePotionEffects(LivingEntity entity) {
+        entity.getActivePotionEffects().stream()
+                .map(PotionEffect::getType)
+                .filter(this::isNegativePotionEffect)
+                .forEach(entity::removePotionEffect);
+    }
+
+    private void removeAllPotionEffects(LivingEntity entity) {
+        entity.getActivePotionEffects().stream()
+                .map(PotionEffect::getType)
+                .forEach(entity::removePotionEffect);
+    }
+    
+    private void removeConfiguredPotionEffects(LivingEntity entity) {
+        if (negativeEffectsOnly) {
+            removeNegativePotionEffects(entity);
+        } else {
+            removeAllPotionEffects(entity);
+        }
+    }
+
+    private void removeConfiguredPotionEffects(Collection<LivingEntity> entities) {
+        entities.forEach(this::removeConfiguredPotionEffects);
     }
 }
