@@ -145,6 +145,10 @@ public class MilkBottle implements Listener {
         if(!ingredient.getType().equals(Material.GUNPOWDER)) {
             return;
         }
+        if(!inv.contains(milkBottle)) {
+            return;
+        }
+
         ItemStack[] items = inv.getContents();
         giveMilkPotion(items, true);
         inv.setIngredient(new ItemStack(Material.AIR));
